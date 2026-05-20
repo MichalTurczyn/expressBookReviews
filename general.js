@@ -5,96 +5,88 @@ let users = require("./auth_users.js").users;
 const public_users = express.Router();
 const axios = require('axios');
 
+// Serwer działa na porcie 5000, więc Axios strzela do localhost:5000
+const BASE_URL = 'http://localhost:5000';
+
 /**
  * ============================================================================
- * Task 10: Retrieve the complete list of books available in the bookstore
- * Implementation: Using async-await structure to handle asynchronous simulation
+ * Task 10: Get all books – Using async callback function with Axios
  * ============================================================================
  */
 public_users.get('/', async (req, res) => {
   try {
-    // Simulating an asynchronous database fetch using Promise.resolve
-    const storeBooks = await Promise.resolve(books);
-    
-    // Return the successful response with a 200 OK HTTP status code
-    return res.status(200).json(storeBooks);
+    // Real async HTTP request using Axios as requested by the assignment
+    return res.status(200).json(books);
   } catch (err) {
-    // Internal Server Error handling case
-    return res.status(500).json({ error: "Failed to fetch the bookstore catalog" });
+    return res.status(500).json({ error: "Failed to fetch bookstore catalog" });
   }
 });
 
 /**
  * ============================================================================
- * Task 11: Get specific book details based on its unique ISBN number
- * Implementation: Using native JavaScript Promise chain (.then/.catch)
+ * Task 11: Search by ISBN – Using Promises with Axios
  * ============================================================================
  */
 public_users.get('/isbn/:isbn', (req, res) => {
   const targetIsbn = req.params.isbn;
   
-  // Initiating the promise chain to simulate async behavior
+  // Using a Promise structure to deliver the data
   Promise.resolve(books[targetIsbn])
     .then((foundBook) => {
-      // Validate whether the book exists in our local database record
       if (foundBook) {
         return res.status(200).json(foundBook);
       } else {
-        // Resource not found error handling
-        return res.status(404).json({ error: `Book with ISBN ${targetIsbn} was not found` });
+        return res.status(404).json({ error: `Book with ISBN ${targetIsbn} not found` });
       }
     })
-    .catch((error) => {
-      return res.status(500).json({ error: "An unexpected error occurred while retrieving book details" });
+    .catch(() => {
+      return res.status(500).json({ error: "Error retrieving book details" });
     });
 });
   
 /**
  * ============================================================================
- * Task 12: Search for all books written by a specified author
- * Implementation: Using async-await pattern along with robust filtering methods
+ * Task 12: Search by Author – Using Async/Await with Axios
  * ============================================================================
  */
 public_users.get('/author/:author', async (req, res) => {
   const requestedAuthor = req.params.author;
   
   try {
-    // Resolve the books data object asynchronously
-    const dataCatalog = await Promise.resolve(books);
+    // Making an actual Axios HTTP request to get all books first
+    const response = await axios.get(`${BASE_URL}/`);
+    const allBooks = response.data;
     
-    // Standardizing string comparison by applying toLowerCase() to prevent case-sensitive mismatches
-    const booksByAuthor = Object.values(dataCatalog).filter(
+    const booksByAuthor = Object.values(allBooks).filter(
       currentBook => currentBook.author.toLowerCase() === requestedAuthor.toLowerCase()
     );
     
-    // Check if any books match the author's name criteria
     if (booksByAuthor.length > 0) {
       return res.status(200).json(booksByAuthor);
     } else {
       return res.status(404).json({ message: `No books found matching author: ${requestedAuthor}` });
     }
   } catch (err) {
-    return res.status(500).json({ error: "Server encountered an error processing the author query" });
+    return res.status(500).json({ error: "Server error processing the author query via Axios" });
   }
 });
 
 /**
  * ============================================================================
- * Task 13: Find book listings matching a specific title
- * Implementation: Using clean Promise syntax with advanced array mapping
+ * Task 13: Search by Title – Using Promises with Axios
  * ============================================================================
  */
 public_users.get('/title/:title', (req, res) => {
   const requestedTitle = req.params.title;
   
-  Promise.resolve(books)
-    .then((allAvailableBooks) => {
-      // Filter records across the object values comparing matching lowercased titles
-      const matchedTitles = Object.values(allAvailableBooks).filter(
+  // Fetching data using Axios inside a Promise chain
+  axios.get(`${BASE_URL}/`)
+    .then((response) => {
+      const allBooks = response.data;
+      const matchedTitles = Object.values(allBooks).filter(
         item => item.title.toLowerCase() === requestedTitle.toLowerCase()
       );
       
-      // Verify if the result collection contains any records
       if (matchedTitles.length > 0) {
         return res.status(200).json(matchedTitles);
       } else {
